@@ -19,15 +19,7 @@ type apiConfig struct {
 	DB *database.Queries
 }
 
-
 func main() {
-
-	// test
-	// feed, err := urlToFeed("https://wagslane.dev/index.xml")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Println(feed)
 
 	godotenv.Load(".env")
 
@@ -37,6 +29,7 @@ func main() {
 	}
 
 	dbURL := os.Getenv("DB_URL")
+
 	if dbURL == "" {
 		log.Fatal("DB_URL is not found in the environment")
 	}
@@ -49,7 +42,7 @@ func main() {
 	// connection conversion
 	db := database.New(conn)
 
-	apiCfg := apiConfig {
+	apiCfg := apiConfig{
 		DB: db,
 	}
 
@@ -57,28 +50,26 @@ func main() {
 		db, 10, time.Minute,
 	)
 
-	// router that handle request 
+	// router that handle request
 	router := chi.NewRouter()
 
 	// securety middleware
 	router.Use(cors.Handler(cors.Options{
-			AllowedOrigins: []string{"https://*", "http://*",},
-			AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
-			AllowedHeaders: []string{"*"},
-			ExposedHeaders: []string{"Link"},
-			AllowCredentials: false,
-			MaxAge: 300,
+		AllowedOrigins:   []string{"https://*", "http://*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
+		AllowedHeaders:   []string{"*"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: false,
+		MaxAge:           300,
 	}))
 
 	v1Router := chi.NewRouter()
-	// this will response to all request method
-	// v1Router.HandleFunc("/healthz", handlerReadiness)
 	v1Router.Get("/healthz", handlerReadiness)
 	v1Router.Get("/err", handlerErr)
-	
+
 	v1Router.Post("/users", apiCfg.handlerCreateUser)
 	v1Router.Get("/users", apiCfg.middlewareAuth(apiCfg.handlerGetUser))
-	
+
 	v1Router.Post("/feeds", apiCfg.middlewareAuth(apiCfg.handlerCreateFeed))
 	v1Router.Get("/feeds", apiCfg.handlerGetFeeds)
 
@@ -92,7 +83,7 @@ func main() {
 
 	srv := &http.Server{
 		Handler: router,
-		Addr: ":"+PORT,
+		Addr:    ":" + PORT,
 	}
 
 	log.Printf("Server strarting on port %v", PORT)
@@ -102,5 +93,5 @@ func main() {
 	if serr != nil {
 		log.Fatal(serr)
 	}
-	
+
 }

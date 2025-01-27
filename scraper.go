@@ -20,7 +20,7 @@ func strartScraping(
 	// loggin message
 	log.Printf("Scraping on %v goroutines every %s duration", concurrency, timeBetweenRequest)
 	ticker := time.NewTicker(timeBetweenRequest)
-	for ; ; <- ticker.C {
+	for ; ; <-ticker.C {
 		feeds, err := db.GetNextFeedsToFetch(
 			context.Background(),
 			int32(concurrency),
@@ -34,7 +34,7 @@ func strartScraping(
 
 		for _, feed := range feeds {
 			wg.Add(1)
-			go scrapeFeed(db,wg, feed)
+			go scrapeFeed(db, wg, feed)
 		}
 		wg.Wait()
 
@@ -57,7 +57,6 @@ func scrapeFeed(db *database.Queries, wg *sync.WaitGroup, feed database.Feed) {
 		return
 	}
 
-
 	for _, item := range rssFeed.Channel.Item {
 
 		description := sql.NullString{}
@@ -65,22 +64,16 @@ func scrapeFeed(db *database.Queries, wg *sync.WaitGroup, feed database.Feed) {
 			description.String = item.Description
 			description.Valid = true
 		}
-		// this giving me an error
-		// pubAt, err := time.Parse(time.RFC1123Z, item.PubDate)
-		// if err != nil {
-		// 	log.Printf("couldn't parse date: %s with err %v",item.PubDate, err)
-		// 	continue
-		// }
 
 		_, err = db.CreatePost(context.Background(), database.CreatePostParams{
-			ID: uuid.New(),
-			CreatedAt: time.Now().UTC(),
-			UpdatedAt: time.Now().UTC(),
-			Title: item.Title,
+			ID:          uuid.New(),
+			CreatedAt:   time.Now().UTC(),
+			UpdatedAt:   time.Now().UTC(),
+			Title:       item.Title,
 			Description: description,
 			PublishedAt: time.Now().UTC(),
-			Url: item.Link,
-			FeedID: feed.ID,
+			Url:         item.Link,
+			FeedID:      feed.ID,
 		})
 
 		if err != nil {
