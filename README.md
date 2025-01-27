@@ -27,6 +27,15 @@ Make copy of `.env.example` as `.env`
 
 Install `goose` and `sqlc`
 
+Create local copy for external package
+```bash
+go mod vendor
+```
+and run
+```bash
+go mod tidy
+```
+
 Go to `sql/schema` folder and run migrate
 
 Migrate up
