@@ -111,33 +111,81 @@
   <div class="container">
     <section class="rss-form">
       <h2>Add RSS Feed</h2>
-      <form>
+      <script>
+    const handleSubmit = async (e) => {
+      e.preventDefault(); 
+      const body = {
+        name: e.target.name.value,
+        url: e.target.url.value,
+      };
+
+      const res = await fetch("/api/v1/feeds", {
+        headers: {
+          "Content-Type": "application/json"
+        },
+        method: "POST",
+        body: JSON.stringify(body)
+      })
+      if (res.status === 201) {
+        location.reload()
+      }
+      console.info(await res.json())
+    };
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById("add_feed");
+      form.addEventListener('submit', handleSubmit);
+    });
+    </script>
+      <form id="add_feed">
         <label for="rss-url">RSS Feed URL:</label>
-        <input type="text" id="rss-url" name="rss-url" placeholder="Enter RSS feed URL">
+        <input type="text" id="rss-url" name="name" placeholder="Enter Name">
+        <input type="text" id="rss-url" name="url" placeholder="Enter RSS feed URL">
         <button type="submit">Add Feed</button>
       </form>
     </section>
+    
+  <script>
+    // follow feed scrips
+    const handleFollow = async (id) => {
+      const body = {
+      feed_id: id 
+      };
 
+      const res = await fetch("/api/v1/feed_follows", {
+        headers: {
+          "Content-Type": "application/json"
+        },
+        method: "POST",
+        body: JSON.stringify(body)
+      })
+      if (res.status === 201) {
+        location.reload()
+      }
+    }
+  </script>
+
+
+  <h1>Feeds</h1>
     <section class="feed-list">
+      {{ range .Feeds }}
       <article class="feed-item">
-        <h3>Feed Title 1</h3>
-        <p>Short description or excerpt from the feed. Click to read more.</p>
-      </article>
-
+        <h3>{{.Name}}</h3>
+        <p>{{.Url}}</p>
+      
+        <button onclick="handleFollow('{{.ID}}')" style="cursor: pointer;">Follow</button>
+      
+      </article> 
+      {{ end }}
+    </section>
+    <h2>Posts</h2>
+    <section>
+      {{ range .Posts }}
       <article class="feed-item">
-        <h3>Feed Title 2</h3>
-        <p>Short description or excerpt from the feed. Click to read more.</p>
-      </article>
-
-      <article class="feed-item">
-        <h3>Feed Title 3</h3>
-        <p>Short description or excerpt from the feed. Click to read more.</p>
-      </article>
+        <h3>{{.Title}}</h3>
+        <code style="white-space: none;">{{.Description}}</code>
+      </article> 
+      {{ end }}
     </section>
   </div>
-
-  <footer>
-    <p>&copy; 2025 RSS Aggregator. All Rights Reserved.</p>
-  </footer>
 </body>
 </html>

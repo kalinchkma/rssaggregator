@@ -9,15 +9,34 @@ import (
 
 type HomePageData struct {
 	PageTitle string
-	Data      any
+	Feeds     []database.Feed
+	Posts     []database.Post
 }
 
 func (appConfig *appConfig) home(w http.ResponseWriter, r *http.Request, user database.User) {
-	data := HomePageData{
-		PageTitle: "Aggregator Home",
-		Data:      "",
+
+	// get all feeds
+	feeds, err := appConfig.DB.GetFeeds(r.Context())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Internal server error")
+		return
 	}
 
+	posts, err := appConfig.DB.GetPostsForUser(r.Context(), database.GetPostsForUserParams{
+		UserID: user.ID,
+		Limit:  1000,
+	})
+
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Internal server error")
+		return
+	}
+
+	data := HomePageData{
+		PageTitle: "Aggregator Home",
+		Feeds:     feeds,
+		Posts:     posts,
+	}
 	// parse template
 	tmpl := template.Must(template.ParseFiles("templates/index.html"))
 

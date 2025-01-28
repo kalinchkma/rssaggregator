@@ -12,7 +12,7 @@ type authedHandler func(http.ResponseWriter, *http.Request, database.User)
 
 func (appCfg *appConfig) middlewareAuth(handler authedHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		apiKey, err := auth.GetAPIKey(r.Header)
+		apiKey, err := auth.GetAPIKeyFromCookies(r.Cookies())
 		if err != nil {
 			// respondWithError(w, 403, fmt.Sprintf("Auth error: %s", err))
 			http.Redirect(w, r, "/login", http.StatusUnauthorized)
