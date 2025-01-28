@@ -1,14 +1,11 @@
-## Web Aggregator with `GO`
+## Rss Feed Aggregator with `GO`
 
-#### Tech used
+#### Tech stack
 
-* [GO]
+* [GO] 
 * [goose]
 * [sqlc]
 * [postgresql]
-
-#### Package used
-
 * [godotenv]
 * [chi]
 * [cors]

@@ -10,11 +10,10 @@ import (
 	"github.com/nanashi10211/rssaggregator/internal/database"
 )
 
-
-func (apiCfg *apiConfig) handlerCreateFeed(w http.ResponseWriter, r *http.Request, user database.User) {
+func (appCfg *appConfig) handlerCreateFeed(w http.ResponseWriter, r *http.Request, user database.User) {
 	type parameters struct {
 		Name string `json:"name"`
-		URL  string	`json:"url"`
+		URL  string `json:"url"`
 	}
 	decoder := json.NewDecoder(r.Body)
 
@@ -25,13 +24,13 @@ func (apiCfg *apiConfig) handlerCreateFeed(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	feed, db_err := apiCfg.DB.CreateFeed(r.Context(), database.CreateFeedParams{
-		ID: uuid.New(),
+	feed, db_err := appCfg.DB.CreateFeed(r.Context(), database.CreateFeedParams{
+		ID:        uuid.New(),
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
 		Name:      params.Name,
-		Url: 	   params.URL,
-		UserID: user.ID,
+		Url:       params.URL,
+		UserID:    user.ID,
 	})
 	if db_err != nil {
 		respondWithError(w, 400, fmt.Sprintf("Couldn;t create a feed: %s", db_err))
@@ -41,12 +40,9 @@ func (apiCfg *apiConfig) handlerCreateFeed(w http.ResponseWriter, r *http.Reques
 	respondWithJSON(w, 201, databaseFeedToFeed(feed))
 }
 
+func (appCfg *appConfig) handlerGetFeeds(w http.ResponseWriter, r *http.Request) {
 
-
-func (apiCfg *apiConfig) handlerGetFeeds(w http.ResponseWriter, r *http.Request) {
-	
-
-	feeds, db_err := apiCfg.DB.GetFeeds(r.Context())
+	feeds, db_err := appCfg.DB.GetFeeds(r.Context())
 	if db_err != nil {
 		respondWithError(w, 400, fmt.Sprintf("Couldn't get feed: %s", db_err))
 		return
@@ -54,4 +50,3 @@ func (apiCfg *apiConfig) handlerGetFeeds(w http.ResponseWriter, r *http.Request)
 
 	respondWithJSON(w, 201, databaseFeedsToFeeds(feeds))
 }
-

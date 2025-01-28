@@ -10,16 +10,16 @@ import (
 
 type authedHandler func(http.ResponseWriter, *http.Request, database.User)
 
-
-func (apiCfg *apiConfig) middlewareAuth(handler authedHandler) http.HandlerFunc {
+func (appCfg *appConfig) middlewareAuth(handler authedHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		apiKey, err := auth.GetAPIKey(r.Header)
 		if err != nil {
-			respondWithError(w, 403, fmt.Sprintf("Auth error: %s", err))
+			// respondWithError(w, 403, fmt.Sprintf("Auth error: %s", err))
+			http.Redirect(w, r, "/login", http.StatusUnauthorized)
 			return
 		}
 
-		user, err := apiCfg.DB.GetUserByAPIKey(r.Context(), apiKey)
+		user, err := appCfg.DB.GetUserByAPIKey(r.Context(), apiKey)
 		if err != nil {
 			respondWithError(w, 400, fmt.Sprintf("Couldn't get user: %v", err))
 			return
@@ -29,3 +29,23 @@ func (apiCfg *apiConfig) middlewareAuth(handler authedHandler) http.HandlerFunc 
 	}
 }
 
+func (appConfig *appConfig) webMiddlewareAuth(handler authedHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		apiKey, err := auth.GetAPIKey(r.Header)
+		if err != nil {
+			// respondWithError(w, 403, fmt.Sprintf("Auth error: %s", err))
+			http.Redirect(w, r, "/login", http.StatusFound)
+			return
+		}
+
+		user, err := appConfig.DB.GetUserByAPIKey(r.Context(), apiKey)
+		if err != nil {
+			// respondWithError(w, 400, fmt.Sprintf("Couldn't get user: %v", err))
+
+			http.Redirect(w, r, "/login", http.StatusFound)
+			return
+		}
+
+		handler(w, r, user)
+	}
+}

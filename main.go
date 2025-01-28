@@ -4,18 +4,18 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
 	"github.com/nanashi10211/rssaggregator/internal/database"
+	"github.com/nanashi10211/rssaggregator/internal/env"
 
 	_ "github.com/lib/pq"
 )
 
-type apiConfig struct {
+type appConfig struct {
 	DB *database.Queries
 }
 
@@ -23,15 +23,14 @@ func main() {
 
 	godotenv.Load(".env")
 
-	PORT := os.Getenv("PORT")
-	if PORT == "" {
-		log.Fatal("PORT is no found")
+	PORT, err := env.GetString("PORT")
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	dbURL := os.Getenv("DB_URL")
-
-	if dbURL == "" {
-		log.Fatal("DB_URL is not found in the environment")
+	dbURL, err := env.GetString("DB_URL")
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	conn, err := sql.Open("postgres", dbURL)
@@ -42,7 +41,7 @@ func main() {
 	// connection conversion
 	db := database.New(conn)
 
-	apiCfg := apiConfig{
+	app := appConfig{
 		DB: db,
 	}
 
@@ -53,7 +52,7 @@ func main() {
 	// router that handle request
 	router := chi.NewRouter()
 
-	// securety middleware
+	// cors middleware
 	router.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"https://*", "http://*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
@@ -63,27 +62,43 @@ func main() {
 		MaxAge:           300,
 	}))
 
-	v1Router := chi.NewRouter()
-	v1Router.Get("/healthz", handlerReadiness)
-	v1Router.Get("/err", handlerErr)
+	// api routes
+	apiRouterV1 := chi.NewRouter()
+	apiRouterV1.Get("/healthz", handlerReadiness)
+	apiRouterV1.Get("/err", handlerErr)
 
-	v1Router.Post("/users", apiCfg.handlerCreateUser)
-	v1Router.Get("/users", apiCfg.middlewareAuth(apiCfg.handlerGetUser))
+	apiRouterV1.Post("/users", app.handlerCreateUser)
+	apiRouterV1.Get("/users", app.middlewareAuth(app.handlerGetUser))
 
-	v1Router.Post("/feeds", apiCfg.middlewareAuth(apiCfg.handlerCreateFeed))
-	v1Router.Get("/feeds", apiCfg.handlerGetFeeds)
+	apiRouterV1.Post("/feeds", app.middlewareAuth(app.handlerCreateFeed))
+	apiRouterV1.Get("/feeds", app.handlerGetFeeds)
 
-	v1Router.Get("/posts", apiCfg.middlewareAuth(apiCfg.handlerGetPostsForUser))
+	apiRouterV1.Get("/posts", app.middlewareAuth(app.handlerGetPostsForUser))
 
-	v1Router.Post("/feed_follows", apiCfg.middlewareAuth(apiCfg.handlerCreateFeedFollow))
-	v1Router.Get("/feed_follows", apiCfg.middlewareAuth(apiCfg.handlerGetFeedFollows))
-	v1Router.Delete("/feed_follows/{feedFollowID}", apiCfg.middlewareAuth(apiCfg.handlerDeleteFeedFollow))
+	apiRouterV1.Post("/feed_follows", app.middlewareAuth(app.handlerCreateFeedFollow))
+	apiRouterV1.Get("/feed_follows", app.middlewareAuth(app.handlerGetFeedFollows))
+	apiRouterV1.Delete("/feed_follows/{feedFollowID}", app.middlewareAuth(app.handlerDeleteFeedFollow))
 
-	router.Mount("/v1", v1Router)
+	router.Mount("/api/v1", apiRouterV1)
+
+	// Web routes
+	webRouter := chi.NewRouter()
+
+	// landing page
+	webRouter.Get("/", app.webMiddlewareAuth(app.home))
+
+	// Auth routes
+	webRouter.Get("/login", app.login)
+	webRouter.Get("/register", app.register)
+
+	router.Mount("/", webRouter)
 
 	srv := &http.Server{
-		Handler: router,
-		Addr:    ":" + PORT,
+		Handler:      router,
+		Addr:         ":" + PORT,
+		WriteTimeout: time.Second * 30,
+		ReadTimeout:  time.Second * 10,
+		IdleTimeout:  time.Minute,
 	}
 
 	log.Printf("Server strarting on port %v", PORT)
