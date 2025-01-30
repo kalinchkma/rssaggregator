@@ -18,6 +18,16 @@
 [goose]: https://github.com/pressly/goose
 [GO]: https://go.dev/
 
+#### Features
+
+- [x] Aggregate `xml` based RSS feed
+- [x] Add RSS Feed
+- [x] Scrape RSS Feed posts with certain amount of time frame
+- [x] Register user
+- [x] Authentication based on cookies
+- [x] Follow unfollow rss feed 
+
+
 #### Run project
 
 Make copy of `.env.example` as `.env`
